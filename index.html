@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Memories Gallery</title>
+    <meta name="description" content="Store and share all your college memories in one place">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@preline/preline@2.0.0/dist/preline.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #0ea5e9;
+            --secondary: #6366f1;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        }
+        
+        .dark body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+        
+        .image-card {
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+        
+        .image-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .lightbox {
+            transition: opacity 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .upload-area {
+            border: 2px dashed #94a3b8;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(14, 165, 233, 0.1);
+        }
+        
+        .dark .upload-area {
+            border-color: #475569;
+        }
+        
+        .dark .upload-area:hover, .dark .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(14, 165, 233, 0.2);
+        }
+        
+        .category-tab {
+            transition: all 0.3s ease;
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+        }
+    </style>
+</head>
+<body class="dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="fixed w-full glass-card z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <a href="#" class="text-xl font-bold gradient-text flex items-center">
+                        <i class="fas fa-camera-retro mr-2"></i>
+                        College Memories
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#gallery" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all">Gallery</a>
+                    <a href="#upload" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all">Upload</a>
+                    <button id="theme-toggle" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline"></i>
+                    </button>
+                    <button id="install-btn" class="hidden px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all">
+                        Install App
+                    </button>
+                </div>
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="text-gray-600 dark:text-gray-300">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass-card border-t border-gray-200 dark:border-gray-800">
+            <div class="px-2 pt-2 pb-3 space-y-2">
+                <a href="#gallery" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800">Gallery</a>
+                <a href="#upload" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800">Upload</a>
+                <button id="theme-toggle-mobile" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span class="flex items-center">
+                        <i class="fas fa-moon dark:hidden mr-2"></i>
+                        <i class="fas fa-sun hidden dark:inline mr-2"></i>
+                        Toggle Theme
+                    </span>
+                </button>
+                <button id="install-btn-mobile" class="hidden w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-primary-500 hover:bg-primary-600">
+                    Install App
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0 slide-in">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">Preserve Your <span class="gradient-text">College Memories</span></h1>
+                <h2 class="text-2xl md:text-3xl font-semibold mb-6 text-gray-600 dark:text-gray-300">Store, Share & Relive Every Moment</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">Upload and organize all your college photos in one place. Access them anytime, even offline, and share with friends.</p>
+                <div class="flex space-x-4">
+                    <a href="#gallery" class="px-6 py-3 gradient-bg hover:opacity-90 text-white rounded-lg font-medium transition-all shadow-lg">View Gallery</a>
+                    <a href="#upload" class="px-6 py-3 border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-gray-800 rounded-lg font-medium transition-all">Upload Photos</a>
+                </div>
+            </div>
+            <div class="md:w-1/2 flex justify-center fade-in">
+                <div class="relative w-full max-w-md">
+                    <div class="absolute -top-6 -left-6 w-32 h-32 rounded-full bg-blue-200 dark:bg-blue-900 opacity-50 animate-pulse"></div>
+                    <div class="absolute -bottom-6 -right-6 w-32 h-32 rounded-full bg-purple-200 dark:bg-purple-900 opacity-50 animate-pulse delay-300"></div>
+                    <div class="relative glass-card p-2 rounded-2xl shadow-xl">
+                        <img src="https://iili.io/3ix4Au4.jpg" 
+                             alt="College students" 
+                             class="w-full h-auto rounded-xl shadow-md">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold mb-4">College <span class="gradient-text">Gallery</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">Browse through your precious college memories organized by categories</p>
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="mb-8 glass-card p-4 rounded-xl shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="relative flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="search-input" class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="Search images...">
+                </div>
+                <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0">
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 active" data-category="all">All</button>
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700" data-category="events">Events</button>
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700" data-category="friends">Friends</button>
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700" data-category="fests">Fests</button>
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700" data-category="hostel">Funny</button>
+                    <button class="category-tab px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700" data-category="classes">Classes</button>
+                </div>
+                <button id="download-all" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all flex items-center">
+                    <i class="fas fa-download mr-2"></i> Download All
+                </button>
+            </div>
+        </div>
+        
+        <!-- Gallery Grid -->
+        <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Images will be loaded here -->
+            <div class="text-center py-10">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-400">Loading images...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="py-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold mb-4">Upload <span class="gradient-text">Photos</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">Add new memories to your college gallery</p>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl shadow-sm">
+            <div id="upload-area" class="upload-area rounded-lg p-8 text-center cursor-pointer mb-6 transition-all">
+                <i class="fas fa-cloud-upload-alt text-4xl text-primary-500 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Drag & Drop your photos here</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">or</p>
+                <label for="file-input" class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg inline-block cursor-pointer transition-all">
+                    <i class="fas fa-folder-open mr-2"></i> Browse Files
+                </label>
+                <input type="file" id="file-input" class="hidden" accept="image/*" multiple>
+            </div>
+            
+            <div id="upload-preview" class="hidden mb-6">
+                <h4 class="text-lg font-medium mb-4">Selected Files</h4>
+                <div id="preview-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+            </div>
+            
+            <div id="upload-form" class="hidden">
+                <div class="mb-4">
+                    <label for="image-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                    <input type="text" id="image-title" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="Enter image title">
+                </div>
+                <div class="mb-4">
+                    <label for="image-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                    <select id="image-category" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                        <option value="events">Events</option>
+                        <option value="friends">Friends</option>
+                        <option value="fests">Fests</option>
+                        <option value="hostel">Funny</option>
+                        <option value="classes">Classes</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="image-tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (comma separated)</label>
+                    <input type="text" id="image-tags" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="e.g., graduation, party, 2023">
+                </div>
+                <button id="upload-submit" class="w-full px-6 py-3 gradient-bg hover:opacity-90 text-white rounded-lg font-medium transition-all shadow-lg">
+                    <i class="fas fa-upload mr-2"></i> Upload Images
+                </button>
+            </div>
+            
+            <div id="upload-progress" class="hidden mt-6">
+                <div class="mb-2 flex justify-between">
+                    <span class="text-sm font-medium">Uploading...</span>
+                    <span id="progress-percent" class="text-sm">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div id="progress-bar" class="gradient-bg h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div id="upload-success" class="hidden mt-6 p-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg text-center">
+                <i class="fas fa-check-circle text-2xl mb-2"></i>
+                <p class="font-medium">Images uploaded successfully!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 hidden">
+        <div class="relative w-full max-w-6xl mx-4">
+            <button id="lightbox-close" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="flex items-center justify-between">
+                <button id="lightbox-prev" class="p-4 text-white hover:text-gray-300 text-2xl">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="flex-grow flex justify-center">
+                    <div class="max-h-[80vh] overflow-hidden">
+                        <img id="lightbox-image" src="" alt="" class="max-h-[80vh] max-w-full object-contain">
+                    </div>
+                </div>
+                <button id="lightbox-next" class="p-4 text-white hover:text-gray-300 text-2xl">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="mt-4 text-center text-white">
+                <h3 id="lightbox-title" class="text-xl font-semibold"></h3>
+                <p id="lightbox-category" class="text-gray-300"></p>
+                <div class="flex justify-center space-x-4 mt-4">
+                    <button id="lightbox-download" class="px-4 py-2 bg-white text-gray-800 rounded-lg hover:bg-gray-200 transition-all">
+                        <i class="fas fa-download mr-2"></i> Download
+                    </button>
+                    <button id="lightbox-share" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all">
+                        <i class="fas fa-share-alt mr-2"></i> Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-gray-200 dark:border-gray-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-600 dark:text-gray-300 mb-4 md:mb-0">
+                    <i class="fas fa-camera-retro mr-2"></i> College Memories Gallery
+                </p>
+                <div class="flex space-x-6">
+                    <a href="https://github.com/Sudarshanbadli" class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-all">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                    <a href="https://codepen.io/Sudarshan-Badli" class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-all">
+                        <i class="fab fa-codepen text-xl"></i>
+                    </a>
+                    <a href="https://x.com/sudarshan_badli?t=mvBhzsfVatXrO3cOhbGeBQ&s=09" class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-all">
+                        <i class="fab fa-twitter text-xl"></i>
+                    </a>
+                    <a href="https://www.instagram.com/sudarshanbadli_7?igsh=azU0MDVibTB5bWFo" class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-all">
+                        <i class="fab fa-instagram text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                © 2025 College Memories Gallery. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Service Worker Registration -->
+    <script>
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+        const installBtnMobile = document.getElementById('install-btn-mobile');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+            installBtnMobile.classList.remove('hidden');
+        });
+        
+        [installBtn, installBtnMobile].forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        btn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                }
+            });
+        });
+    </script>
+
+    <!-- Main App Script -->
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        // Check for saved user preference, if any, on load
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        // Theme toggle button event listeners
+        [themeToggle, themeToggleMobile].forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            });
+        });
+        
+        // Mobile menu toggle
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Close mobile menu when clicking on a link
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+        
+        // Sample image data (in a real app, this would come from IndexedDB/localStorage)
+        let images = [
+            {
+                id: 1,
+                title: "Ferewell Day",
+                category: "events",
+                tags: ["Farewell", "2025", "celebration"],
+                date: "2025-05-16",
+                url: "https://iili.io/3izkoAB.jpg"
+            },
+            {
+                id: 2,
+                title: "College Friends",
+                category: "friends",
+                tags: ["friends", "group", "fun"],
+                date: "2025-05-16",
+                url: "https://iili.io/3ivtJe9.jpg"
+            },
+            {
+                id: 3,
+                title: "Food Fest",
+                category: "fests",
+                tags: ["fest", "outdoor", "enjoying"],
+                date: "2025-05-15",
+                url: "https://iili.io/3i8jlKx.jpg"
+            },
+            {
+                id: 4,
+                title: "Fun Time",
+                category: "Funny",
+                tags: ["Funny", "room", "dorm"],
+                date: "2025-05-017",
+                url: "https://iili.io/3i8oZfR.jpg"
+            },
+            {
+                id: 5,
+                title: "Classroom Session",
+                category: "classes",
+                tags: ["class", "lecture", "learning"],
+                date: "2025-04-15",
+                url: "https://iili.io/3i8l9mx.jpg"
+            },
+            {
+                id: 6,
+                title: "Sports Day",
+                category: "events",
+                tags: ["sports", "competition", "fun"],
+                date: "2025-04-20",
+                url: "https://iili.io/3i8vJSf.jpg"
+            }
+        ];
+        
+        // Initialize IndexedDB
+        let db;
+        const DB_NAME = 'CollegeGalleryDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'images';
+        
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = (event) => {
+                    console.error('Database error:', event.target.error);
+                    reject('Database error');
+                };
+                
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('Database initialized');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('category', 'category', { unique: false });
+                        store.createIndex('title', 'title', { unique: false });
+                        store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
+                    }
+                };
+            });
+        }
+        
+        // Load images from IndexedDB or fallback to sample data
+        async function loadImages() {
+            try {
+                await initDB();
+                
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                
+                request.onsuccess = (event) => {
+                    const dbImages = event.target.result;
+                    if (dbImages && dbImages.length > 0) {
+                        images = dbImages;
+                        renderGallery(images);
+                    } else {
+                        // If no data in IndexedDB, use sample data
+                        renderGallery(images);
+                    }
+                };
+                
+                request.onerror = (event) => {
+                    console.error('Error loading images:', event.target.error);
+                    // Fallback to sample data
+                    renderGallery(images);
+                };
+            } catch (error) {
+                console.error('Error initializing DB:', error);
+                // Fallback to sample data
+                renderGallery(images);
+            }
+        }
+        
+        // Save images to IndexedDB
+        function saveImages(imagesToSave) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                
+                // Clear existing data
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = () => {
+                    // Add all images
+                    imagesToSave.forEach(image => {
+                        store.add(image);
+                    });
+                    
+                    transaction.oncomplete = () => {
+                        console.log('All images saved to IndexedDB');
+                        resolve();
+                    };
+                    
+                    transaction.onerror = (event) => {
+                        console.error('Error saving images:', event.target.error);
+                        reject(event.target.error);
+                    };
+                };
+                
+                clearRequest.onerror = (event) => {
+                    console.error('Error clearing store:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        // Render gallery with images
+        function renderGallery(imagesToRender, filter = 'all', searchTerm = '') {
+            const galleryGrid = document.getElementById('gallery-grid');
+            
+            // Filter images
+            let filteredImages = imagesToRender;
+            if (filter !== 'all') {
+                filteredImages = imagesToRender.filter(img => img.category === filter);
+            }
+            
+            // Search images
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filteredImages = filteredImages.filter(img => 
+                    img.title.toLowerCase().includes(term) || 
+                    img.tags.some(tag => tag.toLowerCase().includes(term))
+                );
+            }
+            
+            // Clear gallery
+            galleryGrid.innerHTML = '';
+            
+            if (filteredImages.length === 0) {
+                galleryGrid.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fas fa-images text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400">No images found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Render images
+            filteredImages.forEach(image => {
+                const imageCard = document.createElement('div');
+                imageCard.className = 'image-card bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all';
+                imageCard.innerHTML = `
+                    <div class="relative overflow-hidden h-48">
+                        <img src="${image.url}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end p-4">
+                            <div>
+                                <h3 class="text-white font-semibold">${image.title}</h3>
+                                <span class="inline-block px-2 py-1 mt-1 text-xs bg-primary-500 text-white rounded-full">${image.category}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">${image.date}</span>
+                            <div class="flex space-x-2">
+                                <button class="download-btn p-2 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-all" data-id="${image.id}">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="share-btn p-2 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-all" data-id="${image.id}">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to open lightbox
+                imageCard.querySelector('img').addEventListener('click', () => openLightbox(image));
+                
+                galleryGrid.appendChild(imageCard);
+            });
+            
+            // Add event listeners to download and share buttons
+            document.querySelectorAll('.download-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    const image = images.find(img => img.id === id);
+                    if (image) downloadImage(image);
+                });
+            });
+            
+            document.querySelectorAll('.share-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    const image = images.find(img => img.id === id);
+                    if (image) shareImage(image);
+                });
+            });
+        }
+        
+        // Category filter
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const category = tab.getAttribute('data-category');
+                const searchTerm = document.getElementById('search-input').value;
+                renderGallery(images, category, searchTerm);
+            });
+        });
+        
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const searchTerm = e.target.value;
+            const activeCategory = document.querySelector('.category-tab.active').getAttribute('data-category');
+            renderGallery(images, activeCategory, searchTerm);
+        });
+        
+        // Download all images as ZIP
+        document.getElementById('download-all').addEventListener('click', async () => {
+            const activeCategory = document.querySelector('.category-tab.active').getAttribute('data-category');
+            const searchTerm = document.getElementById('search-input').value;
+            
+            let imagesToDownload = images;
+            if (activeCategory !== 'all') {
+                imagesToDownload = images.filter(img => img.category === activeCategory);
+            }
+            
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                imagesToDownload = imagesToDownload.filter(img => 
+                    img.title.toLowerCase().includes(term) || 
+                    img.tags.some(tag => tag.toLowerCase().includes(term))
+                );
+            }
+            
+            if (imagesToDownload.length === 0) {
+                alert('No images to download');
+                return;
+            }
+            
+            try {
+                const zip = new JSZip();
+                const imgFolder = zip.folder("college_images");
+                
+                // Add each image to the zip
+                for (const image of imagesToDownload) {
+                    const response = await fetch(image.url);
+                    const blob = await response.blob();
+                    const fileName = `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
+                    imgFolder.file(fileName, blob);
+                }
+                
+                // Generate the zip file
+                const content = await zip.generateAsync({ type: "blob" });
+                saveAs(content, "college_memories.zip");
+            } catch (error) {
+                console.error('Error creating ZIP:', error);
+                alert('Failed to create download. Please try again.');
+            }
+        });
+        
+        // Lightbox functionality
+        let currentLightboxIndex = 0;
+        let lightboxImages = [];
+        
+        function openLightbox(image) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+            const lightboxTitle = document.getElementById('lightbox-title');
+            const lightboxCategory = document.getElementById('lightbox-category');
+            
+            // Get all images in current view
+            const activeCategory = document.querySelector('.category-tab.active').getAttribute('data-category');
+            const searchTerm = document.getElementById('search-input').value;
+            
+            lightboxImages = images;
+            if (activeCategory !== 'all') {
+                lightboxImages = images.filter(img => img.category === activeCategory);
+            }
+            
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                lightboxImages = lightboxImages.filter(img => 
+                    img.title.toLowerCase().includes(term) || 
+                    img.tags.some(tag => tag.toLowerCase().includes(term))
+                );
+            }
+            
+            // Find current image index
+            currentLightboxIndex = lightboxImages.findIndex(img => img.id === image.id);
+            
+            // Update lightbox content
+            lightboxImage.src = image.url;
+            lightboxImage.alt = image.title;
+            lightboxTitle.textContent = image.title;
+            lightboxCategory.textContent = `${image.category} • ${image.date}`;
+            
+            // Show lightbox
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        
+        function navigateLightbox(direction) {
+            if (direction === 'prev') {
+                currentLightboxIndex = (currentLightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+            } else {
+                currentLightboxIndex = (currentLightboxIndex + 1) % lightboxImages.length;
+            }
+            
+            const image = lightboxImages[currentLightboxIndex];
+            const lightboxImage = document.getElementById('lightbox-image');
+            const lightboxTitle = document.getElementById('lightbox-title');
+            const lightboxCategory = document.getElementById('lightbox-category');
+            
+            lightboxImage.src = image.url;
+            lightboxImage.alt = image.title;
+            lightboxTitle.textContent = image.title;
+            lightboxCategory.textContent = `${image.category} • ${image.date}`;
+        }
+        
+        // Lightbox event listeners
+        document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+        document.getElementById('lightbox-prev').addEventListener('click', () => navigateLightbox('prev'));
+        document.getElementById('lightbox-next').addEventListener('click', () => navigateLightbox('next'));
+        document.getElementById('lightbox-download').addEventListener('click', () => {
+            const image = lightboxImages[currentLightboxIndex];
+            downloadImage(image);
+        });
+        document.getElementById('lightbox-share').addEventListener('click', () => {
+            const image = lightboxImages[currentLightboxIndex];
+            shareImage(image);
+        });
+        
+        // Close lightbox when clicking on background
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('lightbox')) {
+                closeLightbox();
+            }
+        });
+        
+        // Keyboard navigation in lightbox
+        document.addEventListener('keydown', (e) => {
+            const lightbox = document.getElementById('lightbox');
+            if (!lightbox.classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    navigateLightbox('prev');
+                } else if (e.key === 'ArrowRight') {
+                    navigateLightbox('next');
+                }
+            }
+        });
+        
+        // Download single image
+        function downloadImage(image) {
+            const link = document.createElement('a');
+            link.href = image.url;
+            link.download = `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Share image
+        async function shareImage(image) {
+            try {
+                // Fetch the image first
+                const response = await fetch(image.url);
+                const blob = await response.blob();
+                const file = new File([blob], 'image.jpg', { type: blob.type });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: image.title,
+                        text: `Check out this college memory: ${image.title}`,
+                        files: [file]
+                    });
+                } else {
+                    // Fallback for browsers that don't support file sharing
+                    await navigator.share({
+                        title: image.title,
+                        text: `Check out this college memory: ${image.title}`,
+                        url: image.url
+                    });
+                }
+            } catch (error) {
+                console.error('Error sharing:', error);
+                
+                // Fallback to copying URL to clipboard
+                try {
+                    await navigator.clipboard.writeText(image.url);
+                    alert('Image URL copied to clipboard!');
+                } catch (clipboardError) {
+                    console.error('Failed to copy URL:', clipboardError);
+                    alert('Sharing failed. Please try again or copy the URL manually.');
+                }
+            }
+        }
+        
+        // Upload functionality
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const uploadPreview = document.getElementById('upload-preview');
+        const uploadForm = document.getElementById('upload-form');
+        const uploadSubmit = document.getElementById('upload-submit');
+        const uploadProgress = document.getElementById('upload-progress');
+        const uploadSuccess = document.getElementById('upload-success');
+        
+        let selectedFiles = [];
+        
+        // Drag and drop events
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+        
+        // Handle selected files
+        function handleFiles(files) {
+            selectedFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            if (selectedFiles.length === 0) {
+                alert('Please select image files only.');
+                return;
+            }
+            
+            // Show preview
+            previewContainer.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'relative';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}" class="w-full h-32 object-cover rounded-lg">
+                        <button class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center remove-btn" data-index="${index}">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                    previewContainer.appendChild(previewItem);
+                    
+                    // Add remove button event
+                    previewItem.querySelector('.remove-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectedFiles.splice(parseInt(e.target.closest('button').getAttribute('data-index')), 1);
+                        handleFiles(selectedFiles); // Re-render preview
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            uploadPreview.classList.remove('hidden');
+            uploadForm.classList.remove('hidden');
+        }
+        
+        // Submit upload
+        uploadSubmit.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('image-title').value.trim() || 'Untitled';
+            const category = document.getElementById('image-category').value;
+            const tags = document.getElementById('image-tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+            
+            if (selectedFiles.length === 0) {
+                alert('Please select at least one image to upload.');
+                return;
+            }
+            
+            // Show progress bar
+            uploadForm.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            
+            // Simulate upload (in a real app, this would upload to a server)
+            let uploadedCount = 0;
+            const newImages = [];
+            
+            for (const file of selectedFiles) {
+                // Create a blob URL for the file (in a real app, this would be the server URL)
+                const blobUrl = URL.createObjectURL(file);
+                
+                // Create new image object
+                const newImage = {
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    title: `${title} ${newImages.length > 0 ? `(${newImages.length + 1})` : ''}`,
+                    category,
+                    tags,
+                    date: new Date().toISOString().split('T')[0],
+                    url: blobUrl
+                };
+                
+                newImages.push(newImage);
+                uploadedCount++;
+                
+                // Update progress
+                const progress = Math.round((uploadedCount / selectedFiles.length) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = `${progress}%`;
+                
+                // Small delay to simulate upload time
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            // Add new images to the gallery
+            images = [...images, ...newImages];
+            
+            // Save to IndexedDB
+            try {
+                await saveImages(images);
+            } catch (error) {
+                console.error('Error saving images:', error);
+            }
+            
+            // Show success message
+            uploadProgress.classList.add('hidden');
+            uploadSuccess.classList.remove('hidden');
+            
+            // Reset form
+            setTimeout(() => {
+                uploadSuccess.classList.add('hidden');
+                uploadPreview.classList.add('hidden');
+                uploadForm.classList.add('hidden');
+                document.getElementById('image-title').value = '';
+                document.getElementById('image-tags').value = '';
+                fileInput.value = '';
+                selectedFiles = [];
+                
+                // Refresh gallery
+                const activeCategory = document.querySelector('.category-tab.active').getAttribute('data-category');
+                const searchTerm = document.getElementById('search-input').value;
+                renderGallery(images, activeCategory, searchTerm);
+            }, 3000);
+        });
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadImages();
+            
+            // Prevent default anchor behavior
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
