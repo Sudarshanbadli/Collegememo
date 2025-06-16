@@ -4,7 +4,8 @@
 
 ## Demo
 
-[Click here to view the live demo](https://collegememo.netlify.app/)
+[Click here to view the live demo1](https://collegememo.netlify.app/)
+[Click here to view the live demo2](https://sudarshanbadli.github.io/Collegememo/)
 
 ## Installation
 
